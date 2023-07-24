@@ -12,7 +12,7 @@ import { logger } from "firebase-functions/v1";
 
 export interface GetDevice {
   deviceId: string;
-  addVersion: boolean;
+  addVersion?: boolean;
 }
 /**
  *
@@ -39,10 +39,39 @@ export async function getDevice(options: GetDevice) {
 
 /**
  *
- * @returns test
+ * @returns all devices and version
  */
-export async function test() {
+export async function getAll() {
+  return "Not supported yet";
   const q = query(collection(db, "devices"));
   const snapshot = await getDocs(q);
-  return snapshot;
+  return snapshot.docs.map(async (doc) => {
+    const documentData = doc.data();
+    let version = null;
+    if (documentData.version) {
+      const versionSnap = await getDoc(documentData.version);
+      if (versionSnap.exists()) {
+        version = versionSnap.data();
+      }
+    }
+    logger.info("document", documentData);
+    logger.info("version", version);
+    const returnObj = { ...documentData, version };
+    logger.info("returnObj", returnObj);
+    return returnObj;
+  });
+}
+
+export interface PostDevice {
+  deviceId: string;
+  version: string;
+}
+export async function postDevice(data: PostDevice) {
+  const { deviceId, version } = data;
+  const result = await setDoc(doc(db, "devices", deviceId), {
+    version,
+    updatedAt: null,
+    createdAt: new Date().valueOf(),
+  });
+  return result;
 }
