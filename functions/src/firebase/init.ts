@@ -1,4 +1,5 @@
 // Import the functions you need from the SDKs you need
+import { defineString } from "firebase-functions/params";
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
@@ -6,8 +7,9 @@ import { getFirestore } from "firebase/firestore";
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
+const apiKeyConfig = defineString("API_KEY");
 const firebaseConfig = {
-  apiKey: "AIzaSyCIpj-Jl19Y02sfiCiypSbqL9_3F3cUGG0",
+  apiKey: apiKeyConfig,
   authDomain: "acity-vms.firebaseapp.com",
   databaseURL: "https://acity-vms-default-rtdb.firebaseio.com",
   projectId: "acity-vms",
