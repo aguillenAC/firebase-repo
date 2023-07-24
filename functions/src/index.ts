@@ -122,9 +122,17 @@ export const checkVersion = onRequest(async (request, response) => {
 
   logger.info("latestVersion", latestVersion);
   logger.info("existsDevice.version", existsDevice.version);
-  if (version === latestVersion) {
-    response.send("No update needed");
+  const upToDate = version === latestVersion;
+  if (upToDate) {
+    response.send({
+      upToDate,
+      message: "Your app is up to date",
+    });
+    return;
   }
 
-  response.send("Update needed");
+  response.send({
+    upToDate,
+    message: "Your app is not up to date",
+  });
 });
