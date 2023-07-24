@@ -9,7 +9,7 @@ import { getFirestore } from "firebase/firestore";
 // Your web app's Firebase configuration
 const apiKeyConfig = defineString("API_KEY");
 const firebaseConfig = {
-  apiKey: apiKeyConfig,
+  apiKey: apiKeyConfig.value(),
   authDomain: "acity-vms.firebaseapp.com",
   databaseURL: "https://acity-vms-default-rtdb.firebaseio.com",
   projectId: "acity-vms",
