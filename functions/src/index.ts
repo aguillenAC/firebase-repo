@@ -120,7 +120,9 @@ export const checkVersion = onRequest(async (request, response) => {
     return;
   }
 
-  if (existsDevice.version === latestVersion) {
+  logger.info("latestVersion", latestVersion);
+  logger.info("existsDevice.version", existsDevice.version);
+  if (version === latestVersion) {
     response.send("No update needed");
   }
 
