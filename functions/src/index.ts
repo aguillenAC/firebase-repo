@@ -8,84 +8,18 @@
  */
 
 import { onRequest } from "firebase-functions/v2/https";
-import * as logger from "firebase-functions/logger";
 import {
   GetDevice,
   getDevice,
-  getAll,
+  patchDevice,
   postDevice,
-  PostDevice,
 } from "./services/devices";
 import { getLatest } from "./services/versions";
 import { corsHandler } from "./cors";
+import { ErrorResponse, ResponseVMS } from "./types/api.types";
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
-
-export const devices = onRequest(async (request, response) => {
-  const { method, query, body } = request;
-
-  switch (method) {
-    case "GET": {
-      logger.info({ ...query, message: "query" });
-
-      if (!query) {
-        response.send("No params");
-        return;
-      }
-
-      if (!(query && query.deviceId && typeof query.deviceId === "string")) {
-        response.send(await getAll());
-        return;
-      }
-
-      const options: GetDevice = {
-        deviceId: query.deviceId,
-        addVersion: query.addVersion ? true : false,
-      };
-      response.send(await getDevice(options));
-      return;
-    }
-    case "POST": {
-      if (!body) {
-        response.send("No body");
-        return;
-      }
-      if (!body.deviceId) {
-        response.send("Insufficient Data");
-        return;
-      }
-
-      const options: PostDevice = {
-        ...body,
-        version: body.version || "unknown",
-      };
-
-      const insertResult = await postDevice(options);
-      response.send(insertResult);
-
-      break;
-    }
-    case "PUT": {
-      break;
-    }
-    case "PATCH": {
-      const { deviceId } = body;
-      const options: GetDevice = {
-        deviceId: deviceId,
-      };
-      const existsDevice = await getDevice(options);
-      if (!existsDevice)
-        response.send("No existe el dispositivo con el id: " + deviceId);
-      break;
-    }
-    default: {
-      logger.info("Unsupported HTTP Method from IP - ", request.ip);
-    }
-  }
-
-  response.send(method);
-});
 
 export const checkVersion = onRequest(async (request, response) => {
   corsHandler(request, response, async () => {
@@ -95,10 +29,14 @@ export const checkVersion = onRequest(async (request, response) => {
       response.send("HTTP Method Not supported");
       return;
     }
+
     const { deviceId, version } = body;
 
     if (!deviceId) {
-      response.send("No device id");
+      response.send({
+        error: 400,
+        message: "No deviceId provided",
+      } as ErrorResponse);
       return;
     }
 
@@ -106,17 +44,30 @@ export const checkVersion = onRequest(async (request, response) => {
       deviceId: deviceId,
     };
     const existsDevice = await getDevice(options);
-    if (!existsDevice) {
+
+    if (existsDevice.type === "error") {
+      response.send(existsDevice);
+      return;
+    }
+
+    if (!existsDevice.data) {
       let insertVersion = "unknown";
       if (version) {
         insertVersion = version;
       }
-      const insertResult = await postDevice({
+      await postDevice({
         deviceId,
         version: insertVersion,
       });
-      response.send(insertResult);
-      return;
+    }
+
+    if (
+      existsDevice.type === "success" &&
+      existsDevice.data &&
+      version !== existsDevice.data.version
+    ) {
+      //Have to update version on firebase
+      await patchDevice({ deviceId, version });
     }
 
     const latestVersion = await getLatest();
@@ -125,8 +76,6 @@ export const checkVersion = onRequest(async (request, response) => {
       return;
     }
 
-    logger.info("latestVersion", latestVersion);
-    logger.info("existsDevice.version", existsDevice.version);
     const upToDate = version === latestVersion;
     if (upToDate) {
       response.send({

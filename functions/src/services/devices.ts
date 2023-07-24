@@ -6,9 +6,15 @@ import {
   getDocs,
   query,
   setDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase/init";
 import { logger } from "firebase-functions/v1";
+import {
+  DeviceDocument,
+  ErrorResponse,
+  GetDeviceResponse,
+} from "../types/api.types";
 
 export interface GetDevice {
   deviceId: string;
@@ -19,22 +25,19 @@ export interface GetDevice {
  * @param {string} deviceId El id del dispositivo
  * @return {Promise<DocumentData | null>} Documento de firebase del dispositivo
  */
-export async function getDevice(options: GetDevice) {
-  const { deviceId, addVersion } = options;
+export async function getDevice(
+  options: GetDevice
+): Promise<GetDeviceResponse> {
+  const { deviceId } = options;
   const docRef = doc(db, "devices", deviceId);
-  const result = await getDoc(docRef);
-  if (!result.exists()) return null;
-
-  const data = result.data();
-  let version = null;
-
-  if (addVersion && data.version) {
-    logger.info("data.version", data.version);
-    const versionSnap = await getDoc(data.version);
-    if (versionSnap.exists()) version = versionSnap.data();
+  try {
+    const result = await getDoc(docRef);
+    const data = result.data() as DeviceDocument;
+    if (!result.exists()) return { type: "success", data: null };
+    return { type: "success", data };
+  } catch (error) {
+    return { type: "error", error: 500, message: "Internal error" };
   }
-
-  return { ...data, version };
 }
 
 /**
@@ -66,12 +69,57 @@ export interface PostDevice {
   deviceId: string;
   version: string;
 }
-export async function postDevice(data: PostDevice) {
+export type PostDeviceResponse =
+  | {
+      type: "success";
+      data: DeviceDocument;
+    }
+  | ErrorResponse;
+
+export async function postDevice(
+  data: PostDevice
+): Promise<PostDeviceResponse> {
   const { deviceId, version } = data;
-  const result = await setDoc(doc(db, "devices", deviceId), {
-    version,
-    updatedAt: null,
-    createdAt: new Date().valueOf(),
-  });
-  return result;
+
+  const createdAt = new Date().valueOf();
+  try {
+    const body = {
+      version,
+      createdAt,
+    };
+    await setDoc(doc(db, "devices", deviceId), body);
+    return { type: "success", data: body };
+  } catch (error) {
+    return { type: "error", error: 500, message: "Internal error" };
+  }
+}
+
+export interface PatchDevice {
+  deviceId: string;
+  version: string;
+}
+export type PatchDeviceResponse =
+  | {
+      type: "success";
+      data: Partial<DeviceDocument>;
+    }
+  | ErrorResponse;
+export async function patchDevice(
+  data: PatchDevice
+): Promise<PatchDeviceResponse> {
+  const { deviceId, version } = data;
+  const updateVersion = version || "unknown";
+  try {
+    const documentRef = doc(db, "devices", deviceId);
+    await updateDoc(documentRef, {
+      version: updateVersion,
+      updatedAt: new Date().valueOf(),
+    });
+    return {
+      type: "success",
+      data: { version: updateVersion, updatedAt: new Date().valueOf() },
+    };
+  } catch (error) {
+    return { type: "error", error: 500, message: "Internal error" };
+  }
 }
