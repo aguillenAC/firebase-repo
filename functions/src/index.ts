@@ -17,6 +17,7 @@ import {
   PostDevice,
 } from "./services/devices";
 import { getLatest } from "./services/versions";
+import { corsHandler } from "./cors";
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
@@ -87,52 +88,57 @@ export const devices = onRequest(async (request, response) => {
 });
 
 export const checkVersion = onRequest(async (request, response) => {
-  const { body, method } = request;
+  corsHandler(request, response, async () => {
+    const { body, method } = request;
 
-  if (method !== "POST") {
-    response.send("HTTP Method Not supported");
-    return;
-  }
-  const { deviceId, version } = body;
-
-  if (!deviceId) {
-    response.send("No device id");
-    return;
-  }
-
-  const options: GetDevice = {
-    deviceId: deviceId,
-  };
-  const existsDevice = await getDevice(options);
-  if (!existsDevice) {
-    let insertVersion = "unknown";
-    if (version) {
-      insertVersion = version;
+    if (method !== "POST") {
+      response.send("HTTP Method Not supported");
+      return;
     }
-    const insertResult = await postDevice({ deviceId, version: insertVersion });
-    response.send(insertResult);
-    return;
-  }
+    const { deviceId, version } = body;
 
-  const latestVersion = await getLatest();
-  if (latestVersion.error) {
-    response.send(latestVersion);
-    return;
-  }
+    if (!deviceId) {
+      response.send("No device id");
+      return;
+    }
 
-  logger.info("latestVersion", latestVersion);
-  logger.info("existsDevice.version", existsDevice.version);
-  const upToDate = version === latestVersion;
-  if (upToDate) {
+    const options: GetDevice = {
+      deviceId: deviceId,
+    };
+    const existsDevice = await getDevice(options);
+    if (!existsDevice) {
+      let insertVersion = "unknown";
+      if (version) {
+        insertVersion = version;
+      }
+      const insertResult = await postDevice({
+        deviceId,
+        version: insertVersion,
+      });
+      response.send(insertResult);
+      return;
+    }
+
+    const latestVersion = await getLatest();
+    if (latestVersion.error) {
+      response.send(latestVersion);
+      return;
+    }
+
+    logger.info("latestVersion", latestVersion);
+    logger.info("existsDevice.version", existsDevice.version);
+    const upToDate = version === latestVersion;
+    if (upToDate) {
+      response.send({
+        upToDate,
+        message: "Your app is up to date",
+      });
+      return;
+    }
+
     response.send({
       upToDate,
-      message: "Your app is up to date",
+      message: "Your app is not up to date",
     });
-    return;
-  }
-
-  response.send({
-    upToDate,
-    message: "Your app is not up to date",
   });
 });
