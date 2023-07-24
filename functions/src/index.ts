@@ -95,7 +95,7 @@ export const checkVersion = onRequest(async (request, response) => {
   }
   const { deviceId, version } = body;
 
-  if (deviceId) {
+  if (!deviceId) {
     response.send("No device id");
     return;
   }

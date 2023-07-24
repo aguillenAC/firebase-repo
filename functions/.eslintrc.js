@@ -32,5 +32,4 @@ module.exports = {
     "valid-jsdoc": 0,
     "require-jsdoc": 0,
   },
-  tsconfigRootDir: __dirname,
 };
