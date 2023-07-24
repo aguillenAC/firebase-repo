@@ -1,29 +1,19 @@
-import {
-  DocumentData,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  setDoc,
-  updateDoc,
-} from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/init";
-import { logger } from "firebase-functions/v1";
 import {
   DeviceDocument,
-  ErrorResponse,
+  GetDevice,
   GetDeviceResponse,
+  PatchDevice,
+  PatchDeviceResponse,
+  PostDevice,
+  PostDeviceResponse,
 } from "../types/api.types";
 
-export interface GetDevice {
-  deviceId: string;
-  addVersion?: boolean;
-}
 /**
- *
- * @param {string} deviceId El id del dispositivo
- * @return {Promise<DocumentData | null>} Documento de firebase del dispositivo
+ * Busca dispositivo por mobile identification number en firestore
+ * @param {GetDevice} options El id del dispositivo
+ * @return {Promise<GetDeviceResponse>} Documento de firebase del dispositivo
  */
 export async function getDevice(
   options: GetDevice
@@ -41,46 +31,14 @@ export async function getDevice(
 }
 
 /**
- *
- * @returns all devices and version
+ * Inserta un nuevo dispositivo en firestore
+ * @param {PostDevice} data El id del dispositivo y la version por agregar del apk
+ * @returns
  */
-export async function getAll() {
-  return "Not supported yet";
-  const q = query(collection(db, "devices"));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(async (doc) => {
-    const documentData = doc.data();
-    let version = null;
-    if (documentData.version) {
-      const versionSnap = await getDoc(documentData.version);
-      if (versionSnap.exists()) {
-        version = versionSnap.data();
-      }
-    }
-    logger.info("document", documentData);
-    logger.info("version", version);
-    const returnObj = { ...documentData, version };
-    logger.info("returnObj", returnObj);
-    return returnObj;
-  });
-}
-
-export interface PostDevice {
-  deviceId: string;
-  version: string;
-}
-export type PostDeviceResponse =
-  | {
-      type: "success";
-      data: DeviceDocument;
-    }
-  | ErrorResponse;
-
 export async function postDevice(
   data: PostDevice
 ): Promise<PostDeviceResponse> {
   const { deviceId, version } = data;
-
   const createdAt = new Date().valueOf();
   try {
     const body = {
@@ -94,16 +52,11 @@ export async function postDevice(
   }
 }
 
-export interface PatchDevice {
-  deviceId: string;
-  version: string;
-}
-export type PatchDeviceResponse =
-  | {
-      type: "success";
-      data: Partial<DeviceDocument>;
-    }
-  | ErrorResponse;
+/**
+ * Actualiza la versión y actualiza el campo updatedAt
+ * @param {PatchDevice} data El id del dispositivo y la version actual del apk
+ * @returns
+ */
 export async function patchDevice(
   data: PatchDevice
 ): Promise<PatchDeviceResponse> {

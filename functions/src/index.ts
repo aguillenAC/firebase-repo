@@ -8,15 +8,11 @@
  */
 
 import { onRequest } from "firebase-functions/v2/https";
-import {
-  GetDevice,
-  getDevice,
-  patchDevice,
-  postDevice,
-} from "./services/devices";
+import { getDevice, patchDevice, postDevice } from "./services/devices";
 import { getLatest } from "./services/versions";
 import { corsHandler } from "./cors";
-import { ErrorResponse, ResponseVMS } from "./types/api.types";
+import { ErrorResponse } from "./types/api.types";
+import { logger } from "firebase-functions/v1";
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
@@ -40,21 +36,17 @@ export const checkVersion = onRequest(async (request, response) => {
       return;
     }
 
-    const options: GetDevice = {
-      deviceId: deviceId,
-    };
-    const existsDevice = await getDevice(options);
-
+    const existsDevice = await getDevice({ deviceId });
     if (existsDevice.type === "error") {
       response.send(existsDevice);
       return;
     }
-
     if (!existsDevice.data) {
       let insertVersion = "unknown";
       if (version) {
         insertVersion = version;
       }
+      logger.info("Inserting new device");
       await postDevice({
         deviceId,
         version: insertVersion,
@@ -67,17 +59,20 @@ export const checkVersion = onRequest(async (request, response) => {
       version !== existsDevice.data.version
     ) {
       //Have to update version on firebase
+      logger.info("Updating device");
       await patchDevice({ deviceId, version });
     }
 
     const latestVersion = await getLatest();
     if (latestVersion.error) {
+      logger.info("Getting latest version");
       response.send(latestVersion);
       return;
     }
 
     const upToDate = version === latestVersion;
     if (upToDate) {
+      logger.info("Up to date");
       response.send({
         upToDate,
         message: "Your app is up to date",
@@ -85,6 +80,7 @@ export const checkVersion = onRequest(async (request, response) => {
       return;
     }
 
+    logger.info("Not up to date");
     response.send({
       upToDate,
       message: "Your app is not up to date",

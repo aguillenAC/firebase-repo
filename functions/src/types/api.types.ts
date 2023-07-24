@@ -10,11 +10,22 @@ export interface ErrorResponse {
   message: string;
 }
 
-export type GetDeviceResponse =
-  | {
-      type: "success";
-      data: DeviceDocument | null;
-    }
-  | ErrorResponse;
+type FirebaseFetch<T> = { type: "success"; data: T } | ErrorResponse;
 
-export type ResponseVMS<T> = T | ErrorResponse;
+export interface GetDevice {
+  deviceId: string;
+  addVersion?: boolean;
+}
+export type GetDeviceResponse = FirebaseFetch<DeviceDocument | null>;
+
+export interface PostDevice {
+  deviceId: string;
+  version: string;
+}
+export type PostDeviceResponse = FirebaseFetch<DeviceDocument>;
+
+export interface PatchDevice {
+  deviceId: string;
+  version: string;
+}
+export type PatchDeviceResponse = FirebaseFetch<Partial<DeviceDocument>>;
