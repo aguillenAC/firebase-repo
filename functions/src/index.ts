@@ -58,7 +58,7 @@ export const checkVersion = onRequest(async (request, response) => {
       existsDevice.data &&
       version !== existsDevice.data.version
     ) {
-      //Have to update version on firebase
+      // Have to update version on firebase
       logger.info("Updating device");
       await patchDevice({ deviceId, version });
     }

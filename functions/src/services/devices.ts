@@ -33,7 +33,7 @@ export async function getDevice(
 /**
  * Inserta un nuevo dispositivo en firestore
  * @param {PostDevice} data El id del dispositivo y la version por agregar del apk
- * @returns
+ * @return {Promise<PostDeviceResponse>} Documento de firebase agregado
  */
 export async function postDevice(
   data: PostDevice
@@ -55,7 +55,7 @@ export async function postDevice(
 /**
  * Actualiza la versión y actualiza el campo updatedAt
  * @param {PatchDevice} data El id del dispositivo y la version actual del apk
- * @returns
+ * @return {Promise<PatchDeviceResponse>} Documento de firebase actualizado
  */
 export async function patchDevice(
   data: PatchDevice

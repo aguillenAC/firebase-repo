@@ -29,8 +29,6 @@ module.exports = {
     "linebreak-style": 0,
     indent: 0,
     curly: 0,
-    "valid-jsdoc": 0,
-    "require-jsdoc": 0,
+    "max-len": 0,
   },
-  tsconfigRootDir: __dirname,
 };
