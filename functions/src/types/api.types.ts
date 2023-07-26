@@ -2,6 +2,7 @@ export interface DeviceDocument {
   version: string;
   createdAt: number;
   updatedAt?: number;
+  associatedUser?: string;
 }
 
 export interface ErrorResponse {
