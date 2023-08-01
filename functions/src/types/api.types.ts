@@ -2,7 +2,7 @@ export interface DeviceDocument {
   version: string;
   createdAt: number;
   updatedAt?: number;
-  associatedUser?: string;
+  user?: string;
 }
 
 export interface ErrorResponse {
@@ -22,11 +22,13 @@ export type GetDeviceResponse = FirebaseFetch<DeviceDocument | null>;
 export interface PostDevice {
   deviceId: string;
   version: string;
+  user?: string;
 }
 export type PostDeviceResponse = FirebaseFetch<DeviceDocument>;
 
 export interface PatchDevice {
   deviceId: string;
   version: string;
+  user?: string;
 }
 export type PatchDeviceResponse = FirebaseFetch<Partial<DeviceDocument>>;

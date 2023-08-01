@@ -1,3 +1,4 @@
+import { logger } from "firebase-functions/v1";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/init";
 import {
@@ -38,13 +39,15 @@ export async function getDevice(
 export async function postDevice(
   data: PostDevice
 ): Promise<PostDeviceResponse> {
-  const { deviceId, version } = data;
+  const { deviceId, version, user } = data;
   const createdAt = new Date().valueOf();
   try {
-    const body = {
+    const body: DeviceDocument = {
       version,
       createdAt,
     };
+    if (user) body.user = user;
+    logger.info({ ...body, message: "Inserting new device" });
     await setDoc(doc(db, "devices", deviceId), body);
     return { type: "success", data: body };
   } catch (error) {
@@ -60,14 +63,17 @@ export async function postDevice(
 export async function patchDevice(
   data: PatchDevice
 ): Promise<PatchDeviceResponse> {
-  const { deviceId, version } = data;
+  const { deviceId, version, user } = data;
   const updateVersion = version || "unknown";
   try {
     const documentRef = doc(db, "devices", deviceId);
-    await updateDoc(documentRef, {
+    const updatePayload: Partial<DeviceDocument> = {
       version: updateVersion,
       updatedAt: new Date().valueOf(),
-    });
+    };
+    if (user) updatePayload.user = user;
+    logger.info({ ...updatePayload, message: "Updating device" });
+    await updateDoc(documentRef, updatePayload);
     return {
       type: "success",
       data: { version: updateVersion, updatedAt: new Date().valueOf() },
