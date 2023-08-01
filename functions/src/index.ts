@@ -26,7 +26,7 @@ export const checkVersion = onRequest(async (request, response) => {
       return;
     }
 
-    const { deviceId, version } = body;
+    const { deviceId, version, user } = body;
 
     if (!deviceId) {
       response.send({
@@ -50,17 +50,19 @@ export const checkVersion = onRequest(async (request, response) => {
       await postDevice({
         deviceId,
         version: insertVersion,
+        user,
       });
     }
 
     if (
       existsDevice.type === "success" &&
       existsDevice.data &&
-      version !== existsDevice.data.version
+      (version !== existsDevice.data.version ||
+        (user && user !== existsDevice.data.user))
     ) {
       // Have to update version on firebase
       logger.info("Updating device");
-      await patchDevice({ deviceId, version });
+      await patchDevice({ deviceId, version, user });
     }
 
     const latestVersion = await getLatest();
